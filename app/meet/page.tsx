@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Heart, X, MapPin, Sparkles, Filter, RotateCcw } from "lucide-react"
+import Link from "next/link"
 
 const profiles = [
   {
@@ -194,9 +195,8 @@ export default function MeetPage() {
                     {currentProfile.images.map((_, index) => (
                       <div
                         key={index}
-                        className={`flex-1 h-1 rounded-full ${
-                          index === currentImageIndex ? "bg-white" : "bg-white/30"
-                        }`}
+                        className={`flex-1 h-1 rounded-full ${index === currentImageIndex ? "bg-white" : "bg-white/30"
+                          }`}
                       />
                     ))}
                   </div>
@@ -253,9 +253,12 @@ export default function MeetPage() {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-2xl font-bold">
-                      {currentProfile.name}, {currentProfile.age}
-                    </h2>
+
+                    <Link href={`/user/${currentProfile.id}`}>
+                      <h2 className="font-semibold text-lg">
+                        {currentProfile.name}, {currentProfile.age}
+                      </h2>
+                    </Link>
                     <div className="flex items-center text-muted-foreground mt-1">
                       <MapPin className="h-4 w-4 mr-1" />
                       {currentProfile.location} • {currentProfile.distance}

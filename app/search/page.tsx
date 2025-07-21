@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Search, Filter, MapPin, Heart, MessageCircle } from "lucide-react"
+import Link from "next/link"
 
 const searchResults = [
   {
@@ -221,9 +222,11 @@ export default function SearchPage() {
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div>
-                        <h3 className="font-semibold text-lg">
-                          {person.name}, {person.age}
-                        </h3>
+                        <Link href={`/user/${person.id}`}>
+                          <h3 className="font-semibold text-lg">
+                            {person.name}, {person.age}
+                          </h3>
+                        </Link>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3 mr-1" />
                           {person.location} • {person.distance}

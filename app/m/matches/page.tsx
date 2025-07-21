@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Heart, X, RotateCcw, MapPin, Star, MessageCircle } from "lucide-react"
 import Image from "next/image"
+import Link from "next/link"
 
 const matchProfiles = [
   {
@@ -214,7 +215,10 @@ export default function MatchesPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-xl font-bold">{currentProfile.name}</h3>
+                    <Link href={`/user/${currentProfile.id}`}>
+                      <h3 className="text-xl font-bold">{currentProfile.name}</h3>
+                    </Link>
+
                     <span className="text-lg text-muted-foreground">{currentProfile.age}</span>
                   </div>
                   <Button size="sm" variant="outline">
