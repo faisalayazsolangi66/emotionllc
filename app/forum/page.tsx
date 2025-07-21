@@ -166,7 +166,7 @@ export default function ForumPage() {
                           <div className="text-3xl">{category.icon}</div>
                           <div className="flex-1">
                             <Link
-                              href={`/forum/category/${category.id}`}
+                              href={`/forum/${category.id}`}
                               className="text-xl font-semibold hover:text-red-500 transition-colors"
                             >
                               {category.name}
@@ -215,7 +215,7 @@ export default function ForumPage() {
                               {thread.isPinned && <Pin className="h-4 w-4 text-blue-500" />}
                               {thread.isHot && <TrendingUp className="h-4 w-4 text-red-500" />}
                               <Link
-                                href={`/forum/thread/${thread.id}`}
+                                href={`/forum/${thread.id}`}
                                 className="font-semibold hover:text-red-500 transition-colors"
                               >
                                 {thread.title}
