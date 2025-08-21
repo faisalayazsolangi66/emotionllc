@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,59 +12,68 @@ import { Slider } from "@/components/ui/slider"
 import { Search, Filter, MapPin, Heart, MessageCircle } from "lucide-react"
 import Link from "next/link"
 
-const searchResults = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    age: 28,
-    image: "/placeholder.svg?height=300&width=300&text=Sarah",
-    location: "New York, NY",
-    distance: "2 miles",
-    bio: "Love hiking, cooking, and exploring new places.",
-    interests: ["Travel", "Cooking", "Hiking"],
-    isOnline: true,
-    compatibility: 95,
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    age: 32,
-    image: "/placeholder.svg?height=300&width=300&text=Michael",
-    location: "San Francisco, CA",
-    distance: "5 miles",
-    bio: "Software engineer who loves music and art.",
-    interests: ["Music", "Art", "Technology"],
-    isOnline: false,
-    compatibility: 87,
-  },
-  {
-    id: 3,
-    name: "Emma Rodriguez",
-    age: 26,
-    image: "/placeholder.svg?height=300&width=300&text=Emma",
-    location: "Los Angeles, CA",
-    distance: "3 miles",
-    bio: "Yoga instructor and wellness enthusiast.",
-    interests: ["Yoga", "Wellness", "Nature"],
-    isOnline: true,
-    compatibility: 92,
-  },
-]
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost/api/"
+const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_FILES_URL || "https://www.emotionsllc.com/ow_userfiles/plugins/base/"
 
 export default function SearchPage() {
   const [showFilters, setShowFilters] = useState(false)
-  const [ageRange, setAgeRange] = useState([18, 65])
+  const [ageRange, setAgeRange] = useState([21, 30])
   const [distance, setDistance] = useState([50])
+  const [loading, setLoading] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
   const [filters, setFilters] = useState({
     gender: "",
     lookingFor: "",
     location: "",
-    education: "",
-    profession: "",
-    interests: [] as string[],
     onlineOnly: false,
     withPhotos: true,
   })
+
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const params = new URLSearchParams()
+
+      params.append("page", "1")
+      params.append("limit", "20")
+
+      if (filters.gender) {
+        params.append("gender", filters.gender === "male" ? "1" : "2")
+      }
+
+      if (filters.lookingFor) {
+        params.append("looking_for", filters.lookingFor)
+      }
+
+      if (filters.withPhotos) {
+        params.append("with_photo", "yes")
+      }
+
+      if (ageRange) {
+        params.append("age_range[min]", ageRange[0].toString())
+        params.append("age_range[max]", ageRange[1].toString())
+      }
+
+      const res = await fetch(`${BASE_URL}users?${params.toString()}`)
+      const json = await res.json()
+
+      if (json.status) {
+        setSearchResults(json.data.data) // Laravel pagination uses data.data
+      } else {
+        setSearchResults([])
+      }
+    } catch (err) {
+      console.error("Error fetching users:", err)
+      setSearchResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Fetch initial users on mount
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,7 +96,6 @@ export default function SearchPage() {
             <div className="lg:col-span-1">
               <Card className="p-6 sticky top-24">
                 <h3 className="font-semibold mb-4">Search Filters</h3>
-
                 <div className="space-y-6">
                   {/* Basic Filters */}
                   <div className="space-y-4">
@@ -103,7 +111,6 @@ export default function SearchPage() {
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -118,21 +125,10 @@ export default function SearchPage() {
                           <SelectValue placeholder="Any" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="friendship">Friendship</SelectItem>
-                          <SelectItem value="dating">Dating</SelectItem>
-                          <SelectItem value="relationship">Relationship</SelectItem>
-                          <SelectItem value="marriage">Marriage</SelectItem>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-
-                    <div>
-                      <Label>Location</Label>
-                      <Input
-                        placeholder="City, State"
-                        value={filters.location}
-                        onChange={(e) => setFilters({ ...filters, location: e.target.value })}
-                      />
                     </div>
                   </div>
 
@@ -141,13 +137,7 @@ export default function SearchPage() {
                     <Label>
                       Age Range: {ageRange[0]} - {ageRange[1]}
                     </Label>
-                    <Slider value={ageRange} onValueChange={setAgeRange} max={65} min={18} step={1} className="mt-2" />
-                  </div>
-
-                  {/* Distance */}
-                  <div>
-                    <Label>Distance: {distance[0]} miles</Label>
-                    <Slider value={distance} onValueChange={setDistance} max={100} min={1} step={1} className="mt-2" />
+                    <Slider value={ageRange} onValueChange={setAgeRange} max={95} min={22} step={1} className="mt-2" />
                   </div>
 
                   {/* Checkboxes */}
@@ -170,7 +160,7 @@ export default function SearchPage() {
                     </div>
                   </div>
 
-                  <Button className="w-full bg-red-500 hover:bg-red-600">
+                  <Button onClick={fetchUsers} className="w-full bg-red-500 hover:bg-red-600">
                     <Search className="h-4 w-4 mr-2" />
                     Apply Filters
                   </Button>
@@ -183,38 +173,24 @@ export default function SearchPage() {
           <div className={showFilters ? "lg:col-span-3" : "lg:col-span-4"}>
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
-              <p className="text-muted-foreground">{searchResults.length} results found</p>
-              <Select defaultValue="compatibility">
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="compatibility">Best Match</SelectItem>
-                  <SelectItem value="distance">Distance</SelectItem>
-                  <SelectItem value="age">Age</SelectItem>
-                  <SelectItem value="recent">Recently Active</SelectItem>
-                </SelectContent>
-              </Select>
+              <p className="text-muted-foreground">
+                {loading ? "Loading..." : `${searchResults.length} results found`}
+              </p>
             </div>
 
             {/* Results Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {searchResults.map((person) => (
+              {searchResults.map((person: any) => (
                 <Card key={person.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="relative">
                     <img
-                      src={person.image || "/placeholder.svg"}
-                      alt={person.name}
+                      src={IMAGE_BASE_URL+"avatars/avatar_big_"+person.id+"_"+person.avatar_hash+".jpg" || "/placeholder.svg"}
+                      alt={person.realname}
                       className="w-full h-64 object-cover"
                     />
-                    {person.isOnline && (
-                      <div className="absolute top-3 right-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                      </div>
-                    )}
                     <div className="absolute bottom-3 left-3">
                       <Badge variant="secondary" className="bg-black/50 text-white">
-                        {person.compatibility}% Match
+                        {person.match_age} yrs
                       </Badge>
                     </div>
                   </div>
@@ -222,26 +198,19 @@ export default function SearchPage() {
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div>
-                        <Link href={`/user/${person.id}`}>
+                        <Link href={`/user/${person.username}`}>
                           <h3 className="font-semibold text-lg">
-                            {person.name}, {person.age}
+                            {person.realname}, {person.match_age}
                           </h3>
                         </Link>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <MapPin className="h-3 w-3 mr-1" />
-                          {person.location} • {person.distance}
+                          {/* If API has location fields, use them here */}
+                          Unknown Location
                         </div>
                       </div>
 
-                      <p className="text-sm text-muted-foreground line-clamp-2">{person.bio}</p>
-
-                      <div className="flex flex-wrap gap-1">
-                        {person.interests.slice(0, 3).map((interest) => (
-                          <Badge key={interest} variant="outline" className="text-xs">
-                            {interest}
-                          </Badge>
-                        ))}
-                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{person.bio || "No bio available"}</p>
 
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" className="flex-1 bg-transparent">

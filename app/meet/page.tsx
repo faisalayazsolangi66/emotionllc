@@ -1,66 +1,28 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Heart, X, MapPin, Sparkles, Filter, RotateCcw } from "lucide-react"
 import Link from "next/link"
 
-const profiles = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    age: 28,
-    location: "New York, NY",
-    image: "/placeholder.svg?height=600&width=400&text=Sarah",
-    bio: "Love hiking, cooking, and exploring new places. Looking for someone to share adventures with!",
-    interests: ["Travel", "Cooking", "Hiking", "Photography"],
-    distance: "2 miles away",
-    lastActive: "Active now",
-    images: [
-      "/placeholder.svg?height=600&width=400&text=Sarah+1",
-      "/placeholder.svg?height=600&width=400&text=Sarah+2",
-      "/placeholder.svg?height=600&width=400&text=Sarah+3",
-    ],
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    age: 32,
-    location: "San Francisco, CA",
-    image: "/placeholder.svg?height=600&width=400&text=Michael",
-    bio: "Software engineer who loves music, art, and good coffee. Let's explore the city together!",
-    interests: ["Music", "Art", "Coffee", "Technology"],
-    distance: "5 miles away",
-    lastActive: "Active 2 hours ago",
-    images: [
-      "/placeholder.svg?height=600&width=400&text=Michael+1",
-      "/placeholder.svg?height=600&width=400&text=Michael+2",
-    ],
-  },
-  {
-    id: 3,
-    name: "Emma Rodriguez",
-    age: 26,
-    location: "Los Angeles, CA",
-    image: "/placeholder.svg?height=600&width=400&text=Emma",
-    bio: "Yoga instructor and wellness enthusiast. Seeking meaningful connections and positive vibes.",
-    interests: ["Yoga", "Wellness", "Meditation", "Nature"],
-    distance: "3 miles away",
-    lastActive: "Active 1 hour ago",
-    images: [
-      "/placeholder.svg?height=600&width=400&text=Emma+1",
-      "/placeholder.svg?height=600&width=400&text=Emma+2",
-      "/placeholder.svg?height=600&width=400&text=Emma+3",
-      "/placeholder.svg?height=600&width=400&text=Emma+4",
-    ],
-  },
-]
+type Profile = {
+  id: number
+  username: string
+  name: string
+  age: number
+  location: string
+  image: string
+  bio: string
+  interests: string[]
+  distance: string
+  lastActive: string
+  images: string[]
+}
 
 export default function MeetPage() {
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showFilters, setShowFilters] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
@@ -69,18 +31,53 @@ export default function MeetPage() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
 
+  // ✅ Fetch profiles from API
+  useEffect(() => {
+    const randomPage = Math.floor(Math.random() * 700) + 1
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}users?page=${randomPage}&limit=1000&with_photo=yes`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data?.data) {
+          const mapped: Profile[] = data.data.data.map((user: any) => {
+            const firstAlbum = user.albums?.[0]
+            const firstPhoto = firstAlbum?.photos?.[0]
+
+            return {
+              id: user.id,
+              name: user.realname || user.username,
+              age: user.birthdate ? new Date().getFullYear() - new Date(user.birthdate).getFullYear() : 25,
+              location: "Unknown", // dummy since API has no location
+              image:
+                firstPhoto?.photo_url ||
+                firstAlbum?.cover?.cover_url ||
+                "/placeholder.svg?height=600&width=400&text=No+Photo",
+              bio: "This user has not added a bio yet.", // dummy
+              interests: ["Music", "Travel", "Sports"], // dummy
+              distance: "5 miles away", // dummy
+              lastActive: "Active recently", // dummy
+              images: firstAlbum?.photos?.map((p: any) => p.photo_url) || [],
+            }
+          })
+          setProfiles(mapped)
+        }
+      })
+      .catch((err) => {
+        console.error("API error:", err)
+      })
+  }, [])
+
   const handleLike = () => {
-    console.log("Liked:", profiles[currentIndex].name)
+    console.log("Liked:", profiles[currentIndex]?.name)
     nextProfile()
   }
 
   const handlePass = () => {
-    console.log("Passed:", profiles[currentIndex].name)
+    console.log("Passed:", profiles[currentIndex]?.name)
     nextProfile()
   }
 
   const handleNope = () => {
-    console.log("Noped:", profiles[currentIndex].name)
+    console.log("Noped:", profiles[currentIndex]?.name)
     nextProfile()
   }
 
@@ -97,7 +94,6 @@ export default function MeetPage() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return
-
     const deltaX = e.clientX - dragStart.x
     const deltaY = e.clientY - dragStart.y
     setDragOffset({ x: deltaX, y: deltaY })
@@ -105,23 +101,16 @@ export default function MeetPage() {
 
   const handleMouseUp = () => {
     if (!isDragging) return
-
     const threshold = 100
     const { x, y } = dragOffset
-
     if (Math.abs(x) > threshold) {
-      if (x > 0) {
-        handleLike() // Swipe right = like
-      } else {
-        handlePass() // Swipe left = pass
-      }
+      if (x > 0) handleLike()
+      else handlePass()
     } else if (y > threshold) {
-      handleNope() // Swipe down = nope
+      handleNope()
     } else {
-      // Snap back
       setDragOffset({ x: 0, y: 0 })
     }
-
     setIsDragging(false)
   }
 
@@ -133,7 +122,6 @@ export default function MeetPage() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return
-
     const touch = e.touches[0]
     const deltaX = touch.clientX - dragStart.x
     const deltaY = touch.clientY - dragStart.y
@@ -142,6 +130,10 @@ export default function MeetPage() {
 
   const handleTouchEnd = () => {
     handleMouseUp()
+  }
+
+  if (profiles.length === 0) {
+    return <div className="min-h-screen flex items-center justify-center">Loading profiles...</div>
   }
 
   const currentProfile = profiles[currentIndex]
@@ -195,8 +187,9 @@ export default function MeetPage() {
                     {currentProfile.images.map((_, index) => (
                       <div
                         key={index}
-                        className={`flex-1 h-1 rounded-full ${index === currentImageIndex ? "bg-white" : "bg-white/30"
-                          }`}
+                        className={`flex-1 h-1 rounded-full ${
+                          index === currentImageIndex ? "bg-white" : "bg-white/30"
+                        }`}
                       />
                     ))}
                   </div>
@@ -227,34 +220,12 @@ export default function MeetPage() {
                     {currentProfile.lastActive}
                   </Badge>
                 </div>
-
-                {/* Swipe indicators */}
-                {isDragging && (
-                  <>
-                    {dragOffset.x > 50 && (
-                      <div className="absolute inset-0 bg-green-500/20 flex items-center justify-center">
-                        <div className="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-xl">LIKE</div>
-                      </div>
-                    )}
-                    {dragOffset.x < -50 && (
-                      <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
-                        <div className="bg-yellow-500 text-white px-4 py-2 rounded-full font-bold text-xl">PASS</div>
-                      </div>
-                    )}
-                    {dragOffset.y > 50 && (
-                      <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                        <div className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-xl">NOPE</div>
-                      </div>
-                    )}
-                  </>
-                )}
               </div>
 
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div>
-
-                    <Link href={`/user/${currentProfile.id}`}>
+                    <Link href={`/user/${currentProfile.username}`}>
                       <h2 className="font-semibold text-lg">
                         {currentProfile.name}, {currentProfile.age}
                       </h2>
@@ -307,12 +278,6 @@ export default function MeetPage() {
             >
               <Sparkles className="h-6 w-6" />
             </Button>
-          </div>
-
-          {/* Swipe Instructions */}
-          <div className="text-center mt-4 text-muted-foreground text-sm">
-            <p>Swipe right to like • Swipe left to pass • Swipe down to nope</p>
-            <p>Tap sides of photo to browse images</p>
           </div>
 
           {/* Profile Counter */}
