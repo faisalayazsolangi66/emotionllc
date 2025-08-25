@@ -163,10 +163,12 @@ export default function GroupsPage() {
                 <SelectItem value="members">Most Members</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="bg-red-500 hover:bg-red-600">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </Button>
+            <Link href="/groups/create">
+              <Button className="bg-red-500 hover:bg-red-600">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Group
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -250,10 +252,12 @@ export default function GroupsPage() {
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
               Have a unique interest or hobby? Create your own group and bring together people who share your passion.
             </p>
-            <Button size="lg" className="bg-red-500 hover:bg-red-600">
-              <Plus className="h-4 w-4 mr-2" />
-              Create New Group
-            </Button>
+            <Link href="/groups/create">
+              <Button size="lg" className="bg-red-500 hover:bg-red-600">
+                <Plus className="h-4 w-4 mr-2" />
+                Create New Group
+              </Button>
+            </Link>
           </Card>
         </div>
       </div>

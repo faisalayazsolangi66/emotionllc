@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Calendar, MessageCircle, Heart } from "lucide-react"
+import { Search, Calendar, MessageCircle, Heart, Plus } from "lucide-react"
 
 const blogPosts = [
   {
@@ -91,6 +91,16 @@ export default function BlogPage() {
             Expert advice, tips, and stories to help you navigate your dating journey and build meaningful
             relationships.
           </p>
+        </div>
+
+        {/* Write Article Button */}
+        <div className="flex justify-center mb-8">
+          <Link href="/blog/create">
+            <Button className="bg-red-500 hover:bg-red-600">
+              <Plus className="h-4 w-4 mr-2" />
+              Write Article
+            </Button>
+          </Link>
         </div>
 
         {/* Search and Filters */}

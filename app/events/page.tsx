@@ -230,9 +230,11 @@ export default function EventsPage() {
             <p className="text-muted-foreground mb-6">
               Create your own singles event and bring people together in your community.
             </p>
-            <Button size="lg" className="bg-red-500 hover:bg-red-600">
-              Create Event
-            </Button>
+            <Link href="/events/create">
+              <Button size="lg" className="bg-red-500 hover:bg-red-600">
+                Create Event
+              </Button>
+            </Link>
           </Card>
         </div>
       </div>

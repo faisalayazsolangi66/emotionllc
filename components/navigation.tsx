@@ -19,22 +19,24 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react"
+import { useAuth } from "@/components/auth-context"
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
-  { name: "Meet", href: "/meet", icon: Sparkles },
-  { name: "Matches", href: "/matches", icon: Heart },
-  { name: "Search", href: "/search", icon: Search },
-  { name: "Chat", href: "/chatrooms", icon: MessageSquare },
-  { name: "Groups", href: "/groups", icon: Users },
-  { name: "Events", href: "/events", icon: Calendar },
+  { name: "Meet", href: "/meet", icon: Sparkles, protected: true },
+  { name: "Matches", href: "/matches", icon: Heart, protected: true },
+  { name: "Search", href: "/search", icon: Search, protected: true },
+  { name: "Chat", href: "/chatrooms", icon: MessageSquare, protected: true },
+  { name: "Groups", href: "/groups", icon: Users, protected: true },
+  { name: "Events", href: "/events", icon: Calendar, protected: true },
   { name: "Blog", href: "/blog", icon: BookOpen },
-  { name: "Forum", href: "/forum", icon: MessageSquare },
+  { name: "Forum", href: "/forum", icon: MessageSquare, protected: true },
 ]
 
 export function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const { isAuthenticated } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -47,21 +49,23 @@ export function Navigation() {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {navigation.map((item) => {
-            const Icon = item.icon
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-red-500 ${
-                  pathname === item.href ? "text-red-500" : "text-muted-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{item.name}</span>
-              </Link>
-            )
-          })}
+          {navigation
+            .filter((item) => !item.protected || isAuthenticated)
+            .map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-red-500 ${
+                    pathname === item.href ? "text-red-500" : "text-muted-foreground"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.name}</span>
+                </Link>
+              )
+            })}
         </nav>
 
         {/* Right Side */}

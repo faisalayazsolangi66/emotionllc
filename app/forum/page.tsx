@@ -132,10 +132,12 @@ export default function ForumPage() {
             <h1 className="text-3xl font-bold mb-2">Community Forum</h1>
             <p className="text-muted-foreground">Connect, share, and get advice from our amazing community</p>
           </div>
-          <Button className="bg-red-500 hover:bg-red-600">
-            <Plus className="h-4 w-4 mr-2" />
-            New Thread
-          </Button>
+          <Link href="/forum/create">
+            <Button className="bg-red-500 hover:bg-red-600">
+              <Plus className="h-4 w-4 mr-2" />
+              New Thread
+            </Button>
+          </Link>
         </div>
 
         {/* Search */}

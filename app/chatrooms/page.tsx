@@ -130,10 +130,12 @@ export default function ChatroomsPage() {
             <h1 className="text-3xl font-bold mb-2">Chat Rooms</h1>
             <p className="text-muted-foreground">Join conversations and connect with people who share your interests</p>
           </div>
-          <Button className="bg-red-500 hover:bg-red-600">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Room
-          </Button>
+          <Link href="/chatrooms/create">
+            <Button className="bg-red-500 hover:bg-red-600">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Room
+            </Button>
+          </Link>
         </div>
 
         {/* Search and Filters */}

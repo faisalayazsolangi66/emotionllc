@@ -370,6 +370,33 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
     }
   }
 
+  const handleSubmit = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}auth/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      )
+      if (!res.ok) {
+        // Handle error (show toast, etc.)
+        console.error("Registration failed")
+        return
+      }
+      // Optionally handle success (show toast, redirect, etc.)
+      const data = await res.json()
+      console.log("Registration successful:", data)
+      onOpenChange(false)
+    } catch (error) {
+      console.error("Error submitting registration:", error)
+      // Optionally show error to user
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -414,11 +441,7 @@ export function SignUpModal({ open, onOpenChange }: SignUpModalProps) {
               </Button>
             ) : (
               <Button
-                onClick={() => {
-                  // Handle form submission
-                  console.log("Form submitted:", formData)
-                  onOpenChange(false)
-                }}
+                onClick={handleSubmit}
                 className="bg-red-500 hover:bg-red-600 text-white"
               >
                 Complete Registration
