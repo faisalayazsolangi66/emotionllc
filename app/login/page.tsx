@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,19 @@ import { Heart, Eye, EyeOff, Shield } from 'lucide-react'
 import { useAuth } from "@/components/auth-context"
 
 export default function AdminLogin() {
+  function getTokenFromCookie(name: string) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || ""
+  return ""
+}
+
+useEffect(()=>{
+  const token = getTokenFromCookie("token")
+  if (token) {
+    router.push("/dashboard")
+  }
+}, [])
   const router = useRouter()
   const [formData, setFormData] = useState({
     email: "",
