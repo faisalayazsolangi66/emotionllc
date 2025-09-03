@@ -35,7 +35,8 @@ export default function AdminLogin() {
       const data = await res.json()
       if (res.ok && data.status && data.token && data.user) {
         login(data.token, data.user)
-        document.cookie = `token=${data.token}; path=/`
+        document.cookie = `token=${data.token}; path=/; SameSite=Lax; Secure`
+        window.location.reload();
         router.push("/dashboard")
       } else {
         setError(data.message || "Invalid email or password")
