@@ -81,7 +81,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <Switch
-              checked={settings.notifications.newMatches}
+              checked={settings?.notifications?.newMatches}
               onCheckedChange={(checked) => updateSetting("notifications", "newMatches", checked)}
             />
           </div>
@@ -97,7 +97,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <Switch
-              checked={settings.notifications.messages}
+              checked={settings?.notifications?.messages}
               onCheckedChange={(checked) => updateSetting("notifications", "messages", checked)}
             />
           </div>

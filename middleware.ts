@@ -8,15 +8,48 @@ export function middleware(request: NextRequest) {
     request.headers.get("authorization") ||
     request.cookies.get("next-auth.session-token")?.value
 
-  // If not authenticated, redirect to /login
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url))
+  // Mobile app routes protection
+  if (pathname.startsWith("/m")) {
+    // Only /m/login is public
+    if (!token && pathname !== "/m/login") {
+      return NextResponse.redirect(new URL("/m/login", request.url))
+    }
+    // If authenticated and accessing /m/login, redirect to /m
+    if (token && pathname === "/m/login") {
+      return NextResponse.redirect(new URL("/m", request.url))
+    }
+    // Allow all other /m routes if authenticated
+    return NextResponse.next()
   }
+
+  // Website routes protection (existing logic)
+  if (
+    [
+      "/meet",
+      "/matches",
+      "/search",
+      "/chatrooms",
+      "/groups",
+      "/events",
+      "/forum",
+      "/dashboard",
+      "/profile/edit",
+      "/profile/settings",
+      "/messages",
+      "/admin",
+    ].some((route) => pathname.startsWith(route))
+  ) {
+    if (!token) {
+      return NextResponse.redirect(new URL("/login", request.url))
+    }
+  }
+
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
+    // Website protected routes
     "/meet/:path*",
     "/matches/:path*",
     "/search/:path*",
@@ -29,5 +62,7 @@ export const config = {
     "/profile/settings/:path*",
     "/messages/:path*",
     "/admin/:path*",
+    // Mobile app routes
+    "/m/:path*",
   ],
 }

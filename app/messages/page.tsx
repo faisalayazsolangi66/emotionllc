@@ -254,6 +254,8 @@ export default function MessagesPage() {
 	const [chats, setChats] = useState<any[]>([])
 	const [loadingChats, setLoadingChats] = useState(true)
 	const [loadingMessages, setLoadingMessages] = useState(false)
+	const [userSuggestions, setUserSuggestions] = useState<any[]>([])
+	const [showSuggestions, setShowSuggestions] = useState(false)
 	const messagesEndRef = useRef<HTMLDivElement>(null)
 
 	const scrollToBottom = () => {
@@ -379,6 +381,30 @@ export default function MessagesPage() {
 		}
 	}
 
+	const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value
+		setSearchQuery(value)
+		if (value.length > 3) {
+			try {
+				const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}users?search=${value}`)
+				const data = await res.json()
+				if (res.ok && data.status && Array.isArray(data.data.data)) {
+					setUserSuggestions(data.data.data)
+					setShowSuggestions(true)
+				} else {
+					setUserSuggestions([])
+					setShowSuggestions(false)
+				}
+			} catch {
+				setUserSuggestions([])
+				setShowSuggestions(false)
+			}
+		} else {
+			setUserSuggestions([])
+			setShowSuggestions(false)
+		}
+	}
+
 	const filteredChats = chats.filter(
 		(chat) =>
 			chat.other_user.realname.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -421,7 +447,7 @@ export default function MessagesPage() {
 	return (
 		<div className="flex h-screen bg-background">
 			{/* Chat List - Left Side */}
-			<div className="w-70 border-r bg-card flex flex-col">
+			<div className="w-80 border-r bg-card flex flex-col">
 				{/* Search Header */}
 				<div className="p-4 border-b">
 					<div className="relative">
@@ -429,23 +455,53 @@ export default function MessagesPage() {
 						<Input
 							placeholder="Search conversations..."
 							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
+							onChange={handleSearchChange}
 							className="pl-10"
 						/>
+						{showSuggestions && (
+							<div className="absolute left-0 right-0 top-full bg-card border rounded shadow z-10">
+								{userSuggestions.length === 0 ? (
+									<div className="p-2 text-muted-foreground">No users found</div>
+								) : (
+									userSuggestions.map((user) => (
+										<Link
+											key={user.id}
+											href={`/messages/${user.username}`}
+											className="block p-2 hover:bg-muted"
+											onClick={() => setShowSuggestions(false)}
+										>
+											<div className="flex items-center gap-2">
+												<Avatar className="h-6 w-6">
+													<AvatarImage src={user.photo_url || "/placeholder.svg"} alt={user.realname} />
+													<AvatarFallback>
+														{user.realname?.split(" ").map((n) => n[0]).join("") || "U"}
+													</AvatarFallback>
+												</Avatar>
+												<span>{user.realname} ({user.username})</span>
+											</div>
+										</Link>
+									))
+								)}
+							</div>
+						)}
 					</div>
 				</div>
 
 				{/* Chat List */}
 				<ScrollArea className="flex-1">
 					<div className="p-2">
-						{filteredChats.map((chat) => (
+						{loadingChats ? (
+							<div className="text-center text-muted-foreground py-8">Loading...</div>
+						) : chats.length === 0 ? (
+							<div className="text-center text-muted-foreground py-8">No Chats available</div>
+						) : (
+							filteredChats.map((chat) => (
                             <Link key={chat.id} href={`/messages/${chat.other_user.username}`}>
 							<div
 								key={chat.id}
 								// onClick={() => {setSelectedChatId(chat.id); setSelectedChatUser(chat.other_user.id)}}
 								className={cn(
-									"flex items-center space-x-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors",
-									selectedChatId === chat.id ? "bg-accent" : "",
+									"flex items-center space-x-3 p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors", "",
 								)}
 							>
 								<div className="relative">
@@ -484,122 +540,15 @@ export default function MessagesPage() {
 								</div>
 							</div>
                             </Link>
-						))}
+						)))
+					}
 					</div>
 				</ScrollArea>
 			</div>
 
 			{/* Chat Conversation - Right Side */}
-			<div className="flex-1 flex flex-col">
-				{/* Chat Header */}
-				<div className="border-b p-4 flex items-center justify-between bg-card">
-					<div className="flex items-center space-x-3">
-						<div className="relative">
-							<Avatar className="h-10 w-10">
-								<AvatarImage src={otherUser?.photo_url || "/placeholder.svg"} alt={otherUser?.realname} />
-								<AvatarFallback>
-									{otherUser?.realname
-										?.split(" ")
-										.map((n) => n[0])
-										.join("") || "U"}
-								</AvatarFallback>
-							</Avatar>
-							{selectedChat && (
-								<div
-									className={cn(
-										"absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background",
-										getOnlineStatusColor(selectedChat.other_user.online_status),
-									)}
-								/>
-							)}
-						</div>
-						<div>
-							<h3 className="font-semibold">{otherUser?.realname}</h3>
-							<p className="text-sm text-muted-foreground">
-								{selectedChat?.other_user.online_status === "online"
-									? "Online"
-									: selectedChat?.other_user.online_status === "away"
-										? "Away"
-										: "Offline"}
-							</p>
-						</div>
-					</div>
-					<div className="flex items-center space-x-2">
-						<Button variant="ghost" size="icon">
-							<Phone className="h-4 w-4" />
-						</Button>
-						<Button variant="ghost" size="icon">
-							<Video className="h-4 w-4" />
-						</Button>
-						<Button variant="ghost" size="icon">
-							<Info className="h-4 w-4" />
-						</Button>
-						<Button variant="ghost" size="icon">
-							<MoreVertical className="h-4 w-4" />
-						</Button>
-					</div>
-				</div>
-
-				{/* Messages */}
-				<ScrollArea className="flex-1 p-4">
-					<div className="space-y-4">
-						{chatData?.chat.messages.map((message) => {
-							const isCurrentUser = message.sender_id === currentUserId
-							const sender = isCurrentUser ? chatData.chat.user_one : chatData.chat.user_two
-
-							return (
-								<div
-									key={message.id}
-									className={cn("flex items-start space-x-2", isCurrentUser ? "flex-row-reverse space-x-reverse" : "")}
-								>
-									<Avatar className="h-8 w-8">
-										<AvatarImage src={sender.photo_url || "/placeholder.svg"} alt={sender.realname} />
-										<AvatarFallback>
-											{sender.realname
-												?.split(" ")
-												.map((n) => n[0])
-												.join("") || "U"}
-										</AvatarFallback>
-									</Avatar>
-									<div
-										className={cn(
-											"max-w-[70%] rounded-lg p-3",
-											isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted",
-										)}
-									>
-										<p className="text-sm">{message.message}</p>
-										<p
-											className={cn(
-												"text-xs mt-1",
-												isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground",
-											)}
-										>
-											{formatTime(message.created_at)}
-											{isCurrentUser && message.read_at && <span className="ml-1">✓✓</span>}
-										</p>
-									</div>
-								</div>
-							)
-						})}
-						<div ref={messagesEndRef} />
-					</div>
-				</ScrollArea>
-
-				{/* Message Input */}
-				<div className="border-t p-4 bg-card">
-					<div className="flex items-center space-x-2">
-						<Input
-							placeholder="Type a message..."
-							value={newMessage}
-							onChange={(e) => setNewMessage(e.target.value)}
-							onKeyPress={handleKeyPress}
-							className="flex-1"
-						/>
-						<Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
-							<Send className="h-4 w-4" />
-						</Button>
-					</div>
-				</div>
+			<div className="flex-1 flex flex-col" style={{textAlign:'center'}}>
+				<h1 style={{margin:'auto'}}>Please Select a Chat to start Messaging</h1>
 			</div>
 		</div>
 	)

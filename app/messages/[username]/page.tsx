@@ -27,13 +27,15 @@ export default function MessagesPage({ params }: { params: { username: string } 
     const currentUserId = loggedInUser?.id
 
     const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
-    const [selectedChatUser, setSelectedChatUser] = useState<number | null>(null)
+    const [selectedChatUser, setSelectedChatUser] = useState<any | null>(null)
+    console.log(selectedChatUser,"===================selectedChatUser")
     const [searchQuery, setSearchQuery] = useState("")
     const [newMessage, setNewMessage] = useState("")
     const [chatData, setChatData] = useState<any>(null)
     const [chats, setChats] = useState<any[]>([])
     const [loadingChats, setLoadingChats] = useState(true)
     const [loadingMessages, setLoadingMessages] = useState(false)
+    const [searchedUser, setSearchedUser] = useState<any>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     const scrollToBottom = () => {
@@ -82,9 +84,7 @@ export default function MessagesPage({ params }: { params: { username: string } 
     useEffect(() => {
         scrollToBottom()
     }, [chatData?.chat?.messages])
-
-    useEffect(() => {
-        const fetchChats = async () => {
+ const fetchChats = async () => {
             const token = getTokenFromCookie("token")
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}my-chats`, {
@@ -117,7 +117,7 @@ export default function MessagesPage({ params }: { params: { username: string } 
                     )
                     if (selected) {
                         setSelectedChatId(selected.id)
-                        setSelectedChatUser(selected.other_user.id)
+                        setSelectedChatUser(selected.other_user)
                     }
                 } else {
                     setChats([])
@@ -127,6 +127,7 @@ export default function MessagesPage({ params }: { params: { username: string } 
             }
             setLoadingChats(false)
         }
+    useEffect(() => {
         fetchChats()
     }, [params.username])
 
@@ -168,7 +169,7 @@ export default function MessagesPage({ params }: { params: { username: string } 
                     "Authorization": `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    receiver_id: selectedChatUser,
+                    receiver_id: selectedChatUser?.id,
                     message: newMessage,
                 }),
             })
@@ -178,10 +179,11 @@ export default function MessagesPage({ params }: { params: { username: string } 
                 socket.emit("message", {
                     chat_id: selectedChatId,
                     sender_id: currentUserId,
-                    receiver_id: selectedChatUser,
+                    receiver_id: selectedChatUser?.id,
                     message: newMessage,
                     timestamp: new Date().toISOString(),
                 })
+                await fetchChats();
                 // Optionally refresh messages from API
                 const fetchChatMessages = async () => {
                     setLoadingMessages(true)
@@ -250,6 +252,36 @@ export default function MessagesPage({ params }: { params: { username: string } 
                 return "bg-gray-400"
         }
     }
+
+    useEffect(() => {
+        if (chats.length > 0) {
+            const selected = chats.find(chat => chat.other_user.username === params.username)
+            if (selected) {
+                setSelectedChatId(selected.id)
+                setSelectedChatUser(selected.other_user)
+                setSearchedUser(null)
+                return
+            }
+        }
+        // If not found, fetch user by username
+        const fetchUser = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}user/${params.username}`)
+                const data = await res.json()
+                console.log(data,"==========================data in fetch user")
+                if (res.ok && data.status && data.data.id > 0) {
+                    setSearchedUser(data.data)
+                    setSelectedChatId(null)
+                    setSelectedChatUser(data.data)
+                } else {
+                    setSearchedUser(null)
+                }
+            } catch {
+                setSearchedUser(null)
+            }
+        }
+        fetchUser()
+    }, [chats, params.username])
 
     return (
         <div className="flex h-screen bg-background">
@@ -327,31 +359,27 @@ export default function MessagesPage({ params }: { params: { username: string } 
                     <div className="flex items-center space-x-3">
                         <div className="relative">
                             <Avatar className="h-10 w-10">
-                                <AvatarImage src={otherUser?.photo_url || "/placeholder.svg"} alt={otherUser?.realname} />
+                                <AvatarImage src={selectedChatUser?.photo_url || "/placeholder.svg"} alt={selectedChatUser?.realname} />
                                 <AvatarFallback>
-                                    {otherUser?.realname
+                                    {selectedChatUser?.realname
                                         ?.split(" ")
                                         .map((n) => n[0])
                                         .join("") || "U"}
                                 </AvatarFallback>
                             </Avatar>
-                            {selectedChat && (
+                            {selectedChatUser && (
                                 <div
                                     className={cn(
                                         "absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-background",
-                                        getOnlineStatusColor(selectedChat.other_user.online_status),
+                                        getOnlineStatusColor(selectedChatUser?.online_status),
                                     )}
                                 />
                             )}
                         </div>
                         <div>
-                            <h3 className="font-semibold">{otherUser?.realname}</h3>
+                            <h3 className="font-semibold">{selectedChatUser?.realname || selectedChatUser?.username}</h3>
                             <p className="text-sm text-muted-foreground">
-                                {selectedChat?.other_user.online_status === "online"
-                                    ? "Online"
-                                    : selectedChat?.other_user.online_status === "away"
-                                        ? "Away"
-                                        : "Offline"}
+                                {"Online"}
                             </p>
                         </div>
                     </div>

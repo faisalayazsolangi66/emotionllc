@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost/api/"
 const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_FILES_URL || "https://www.emotionsllc.com/ow_userfiles/plugins/base/"
 
 export default function SearchPage() {
+  const searchParams = useSearchParams()
   const [showFilters, setShowFilters] = useState(false)
   const [ageRange, setAgeRange] = useState([21, 30])
   const [distance, setDistance] = useState([50])
@@ -27,28 +29,58 @@ export default function SearchPage() {
     location: "",
     onlineOnly: false,
     withPhotos: true,
+    ageMin: "",
+    ageMax: "",
+    country: "",
   })
+
+  // Read filters from query string on mount
+  useEffect(() => {
+    const gender = searchParams.get("gender") || ""
+    const lookingFor = searchParams.get("lookingFor") || ""
+    const onlineOnly = searchParams.get("onlineOnly") === "true"
+    const withPhotos = searchParams.get("withPhoto") === "true"
+    const ageMin = searchParams.get("ageMin") || ""
+    const ageMax = searchParams.get("ageMax") || ""
+    const country = searchParams.get("country") || ""
+    setFilters({
+      gender,
+      lookingFor,
+      location: "",
+      onlineOnly,
+      withPhotos,
+      ageMin,
+      ageMax,
+      country,
+    })
+    // Set age range if provided
+    if (ageMin && ageMax) {
+      setAgeRange([parseInt(ageMin), parseInt(ageMax)])
+    }
+  }, [searchParams])
 
   const fetchUsers = async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-
       params.append("page", "1")
       params.append("limit", "20")
 
       if (filters.gender) {
-        params.append("gender", filters.gender === "male" ? "1" : "2")
+        params.append("gender", filters.gender === "male" ? "1" : filters.gender === "female" ? "2" : filters.gender)
       }
-
       if (filters.lookingFor) {
         params.append("looking_for", filters.lookingFor)
       }
-
       if (filters.withPhotos) {
         params.append("with_photo", "yes")
       }
-
+      if (filters.onlineOnly) {
+        params.append("online_only", "yes")
+      }
+      if (filters.country) {
+        params.append("country", filters.country)
+      }
       if (ageRange) {
         params.append("age_range[min]", ageRange[0].toString())
         params.append("age_range[max]", ageRange[1].toString())
@@ -58,7 +90,7 @@ export default function SearchPage() {
       const json = await res.json()
 
       if (json.status) {
-        setSearchResults(json.data.data) // Laravel pagination uses data.data
+        setSearchResults(json.data.data)
       } else {
         setSearchResults([])
       }
@@ -70,10 +102,11 @@ export default function SearchPage() {
     }
   }
 
-  // Fetch initial users on mount
+  // Fetch users when filters change
   useEffect(() => {
     fetchUsers()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, ageRange])
 
   return (
     <div className="min-h-screen bg-background">

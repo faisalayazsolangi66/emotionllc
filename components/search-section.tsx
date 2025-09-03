@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -8,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Search, MapPin, Users, Calendar } from "lucide-react"
 
 export function SearchSection() {
+  const router = useRouter()
   const [searchData, setSearchData] = useState({
     gender: "",
     lookingFor: "",
@@ -17,6 +19,18 @@ export function SearchSection() {
     onlineOnly: false,
     withPhoto: false,
   })
+
+  const handleSearch = () => {
+    const params = new URLSearchParams()
+    if (searchData.gender) params.append("gender", searchData.gender)
+    if (searchData.lookingFor) params.append("lookingFor", searchData.lookingFor)
+    if (searchData.ageMin) params.append("ageMin", searchData.ageMin)
+    if (searchData.ageMax) params.append("ageMax", searchData.ageMax)
+    if (searchData.country) params.append("country", searchData.country)
+    if (searchData.onlineOnly) params.append("onlineOnly", "true")
+    if (searchData.withPhoto) params.append("withPhoto", "true")
+    router.push(`/search?${params.toString()}`)
+  }
 
   return (
     <section className="py-16 bg-muted/50 backdrop-blur-sm">
@@ -45,7 +59,6 @@ export function SearchSection() {
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -142,7 +155,10 @@ export function SearchSection() {
 
             {/* Search Button */}
             <div className="flex justify-center">
-              <Button className="bg-red-500 hover:bg-red-600 text-white px-12 py-3 text-lg font-semibold rounded-full">
+              <Button
+                className="bg-red-500 hover:bg-red-600 text-white px-12 py-3 text-lg font-semibold rounded-full"
+                onClick={handleSearch}
+              >
                 <Search className="mr-2 w-5 h-5" />
                 Search Matches
               </Button>

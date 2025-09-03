@@ -28,6 +28,7 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                     const mappedProfile = {
                         id: u.id,
                         name: u.realname || u.username,
+                        username: u.username,
                         age: u.birthdate ? new Date().getFullYear() - new Date(u.birthdate).getFullYear() : "N/A",
                         location: "New York, USA", // dummy
                         distance: "5 miles away", // dummy
@@ -48,8 +49,8 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                             })) || [],
                         },
                         details: {
-                            relationshipType: "Long-term relationship", // dummy
-                            languages: ["English", "Spanish"], // dummy
+                            looking_for: u.looking_for, // dummy
+                            languages: u.language, // dummy
                             height: "5'9\"",
                             education: "Bachelor's Degree",
                             profession: "Software Engineer",
@@ -156,10 +157,10 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                                             <span className="text-muted-foreground">Mutual Interests</span>
                                             <span className="font-semibold">{userProfile.mutualInterests}</span>
                                         </div>
-                                        <div className="flex justify-between">
+                                        {/* <div className="flex justify-between">
                                             <span className="text-muted-foreground">Mutual Friends</span>
                                             <span className="font-semib">{userProfile.mutualFriends}</span>
-                                        </div>
+                                        </div> */}
                                     </div>
                                 </CardContent>
                             </Card>
@@ -203,10 +204,12 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                                             <Heart className={`h-4 w-4 mr-2 ${isLiked ? "fill-current" : ""}`} />
                                             {isLiked ? "Liked!" : "Like"}
                                         </Button>
-                                        <Button variant="outline" className="flex-1 bg-transparent">
-                                            <MessageCircle className="h-4 w-4 mr-2" />
-                                            Message
-                                        </Button>
+                                        <Link href={`/messages/${userProfile.username}`}>
+                                            <Button variant="outline" className="flex-1 bg-transparent">
+                                                <MessageCircle className="h-4 w-4 mr-2" />
+                                                Message
+                                            </Button>
+                                        </Link>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -232,17 +235,15 @@ export default function UserProfilePage({ params }: { params: { id: string } }) 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <h4 className="font-medium mb-2">Looking For</h4>
-                                                    <p className="text-sm text-muted-foreground">{userProfile.details.relationshipType}</p>
+                                                    <p className="text-sm text-muted-foreground">{userProfile.details.looking_for || 'N/A'}</p>
                                                 </div>
                                                 <div>
                                                     <h4 className="font-medium mb-2">Languages</h4>
                                                     <div className="flex flex-wrap gap-1">
-                                                        {userProfile.details.languages.map((lang) => (
-                                                            <Badge key={lang} variant="outline" className="text-xs">
-                                                                {lang}
+=                                                            <Badge key={userProfile.details.languages} variant="outline" className="text-xs">
+                                                                {userProfile.details.languages || 'N/A'}
                                                             </Badge>
-                                                        ))}
-                                                    </div>
+=                                                    </div>
                                                 </div>
                                             </div>
                                         </CardContent>

@@ -7,56 +7,10 @@ import { Progress } from "@/components/ui/progress"
 import { Eye, Heart, MessageCircle, Calendar, TrendingUp, Edit, Settings, TrendingUpIcon, ListStartIcon, Users } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/components/auth-context"
+import { useToast } from "@/hooks/use-toast"
 
 type IconKey = keyof typeof iconMap
-
-const dashboardStats: {
-	key: string
-	label: string
-	value: number
-	icon: IconKey
-	trend: string
-	trendIcon: IconKey
-	trendColor: string
-}[] = [
-	{
-		key: "profileViews",
-		label: "Profile Views",
-		value: 1234,
-		icon: "Eye",
-		trend: "+12% this week",
-		trendIcon: "TrendingUp",
-		trendColor: "green",
-	},
-	{
-		key: "totalMatches",
-		label: "Total Matches",
-		value: 47,
-		icon: "Heart",
-		trend: "+3 new matches",
-		trendIcon: "TrendingUp",
-		trendColor: "green",
-	},
-	{
-		key: "messages",
-		label: "Messages",
-		value: 89,
-		icon: "MessageCircle",
-		trend: "5 unread",
-		trendIcon: "MessageCircle",
-		trendColor: "blue",
-	},
-	{
-		key: "eventsJoined",
-		label: "Events Joined",
-		value: 12,
-		icon: "Calendar",
-		trend: "2 upcoming",
-		trendIcon: "Calendar",
-		trendColor: "purple",
-	},
-]
-
 const profileCompletion = {
 	rate: 85,
 	actions: [
@@ -65,34 +19,6 @@ const profileCompletion = {
 		{ label: "Set Preferences" },
 	],
 }
-
-const recentMessages = [
-	{
-		id: 1,
-		name: "Sarah Johnson",
-		image: "/placeholder.svg?height=40&width=40&text=Sarah",
-		message: "Hey! How's your day going?",
-		time: "2 hours ago",
-		unread: true,
-	},
-	{
-		id: 2,
-		name: "Michael Chen",
-		image: "/placeholder.svg?height=40&width=40&text=Michael",
-		message: "Would love to grab coffee sometime!",
-		time: "1 day ago",
-		unread: false,
-	},
-	{
-		id: 3,
-		name: "Emma Rodriguez",
-		image: "/placeholder.svg?height=40&width=40&text=Emma",
-		message: "Thanks for the match! 😊",
-		time: "5 hours ago",
-		unread: true,
-	},
-]
-
 const recentActivities = [
 	{
 		id: 1,
@@ -116,46 +42,148 @@ const recentActivities = [
 		time: "3 days ago",
 	},
 ]
-
-const upcomingEvents = [
-	{
-		id: 1,
-		title: "Speed Dating Night",
-		date: "Feb 15, 2024",
-		time: "7:00 PM",
-		location: "Downtown Bar",
-	},
-	{
-		id: 2,
-		title: "Singles Hiking",
-		date: "Feb 18, 2024",
-		time: "9:00 AM",
-		location: "Central Park",
-	},
-]
-
-const iconMap = {
-	Eye,
-	Heart,
-	MessageCircle,
-	Calendar,
-	TrendingUp,
-	Edit,
-	Settings,
-}
-
-function getTokenFromCookie(name: string) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift() || "";
-    return "";
-}
-
 export default function DashboardPage() {
+	const { user } = useAuth()
 	const [recentMatches, setRecentMatches] = useState<any[]>([])
 	const [loadingMatches, setLoadingMatches] = useState(true)
 	const [recentMessages, setRecentMessages] = useState<any[]>([])
 	const [loadingMessages, setLoadingMessages] = useState(true)
+	const [dashboardStatsData, setDashboardStatsData] = useState({
+		profileViews: 0,
+		totalMatches: 0,
+		totalEventsJoined: 0,
+		messages: 0,
+	})
+	const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
+	const [loadingEvents, setLoadingEvents] = useState(true)
+	const { toast } = useToast()
+
+	const iconMap = {
+		Eye,
+		Heart,
+		MessageCircle,
+		Calendar,
+		TrendingUp,
+		Edit,
+		Settings,
+	}
+
+	function getTokenFromCookie(name: string) {
+		const value = `; ${document.cookie}`;
+		const parts = value.split(`; ${name}=`);
+		if (parts.length === 2) return parts.pop()?.split(';').shift() || "";
+		return "";
+	}
+
+	useEffect(() => {
+		const token = getTokenFromCookie("token")
+
+		// Dashboard stats
+		const fetchStats = async () => {
+			try {
+				const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}user/dashboard/stats`, {
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						"Authorization": `Bearer ${token}`,
+					},
+				})
+				const data = await res.json()
+				if (res.ok && data.status && data.data) {
+					setDashboardStatsData((prev) => ({
+						...prev,
+						profileViews: data.data.profile_views,
+						totalMatches: data.data.total_matches,
+						totalEventsJoined: data.data.total_events_joined,
+					}))
+				}
+			} catch {
+				toast({ title: "Error", description: "Failed to load dashboard stats.", variant: "destructive" })
+			}
+		}
+
+		// Upcoming events
+		const fetchUpcomingEvents = async () => {
+			try {
+				const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}user/events/upcoming`, {
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						"Authorization": `Bearer ${token}`,
+					},
+				})
+				const data = await res.json()
+				if (res.ok && data.status && data.data && data.data.event) {
+					const event = data.data.event
+					setUpcomingEvents([{
+						id: event.id,
+						title: event.title,
+						date: event.start_date,
+						time: event.time,
+						location: event.location,
+						image: event.image,
+						description: event.description,
+					}])
+				} else {
+					setUpcomingEvents([])
+				}
+			} catch {
+				setUpcomingEvents([])
+			}
+			setLoadingEvents(false)
+		}
+
+		fetchStats()
+		fetchUpcomingEvents()
+	}, [])
+
+	// Messages stat from messages API
+	useEffect(() => {
+		const fetchMessages = async () => {
+			const token = getTokenFromCookie("token")
+			try {
+				const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}my-chats`, {
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						"Authorization": `Bearer ${token}`,
+					},
+				})
+				const data = await res.json()
+				if (res.ok && Array.isArray(data.chats)) {
+					const messages = data.chats.map((chat: any) => ({
+						id: chat.user.id,
+						name: chat.user.realname || chat.user.username,
+						image: chat.user.photo_url || "/placeholder.svg",
+						message: chat.lastMessage?.message || "",
+						time: chat.lastMessage?.created_at
+							? new Date(chat.lastMessage.created_at).toLocaleString()
+							: "",
+						unread: !chat.lastMessage?.read_at,
+					}))
+					setRecentMessages(messages)
+					setDashboardStatsData((prev) => ({
+						...prev,
+						messages: messages.length,
+					}))
+				} else {
+					setRecentMessages([])
+					setDashboardStatsData((prev) => ({
+						...prev,
+						messages: 0,
+					}))
+				}
+			} catch {
+				setRecentMessages([])
+				setDashboardStatsData((prev) => ({
+					...prev,
+					messages: 0,
+				}))
+			}
+			setLoadingMessages(false)
+		}
+		fetchMessages()
+	}, [])
 
 	useEffect(() => {
 		const fetchMatches = async () => {
@@ -192,40 +220,45 @@ export default function DashboardPage() {
 		fetchMatches()
 	}, [])
 
-	useEffect(() => {
-		const fetchMessages = async () => {
-			const token = getTokenFromCookie("token")
-			try {
-				const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}my-chats`, {
-					method: "GET",
-					headers: {
-						"Content-Type": "application/json",
-						"Authorization": `Bearer ${token}`,
-					},
-				})
-				const data = await res.json()
-				if (res.ok && Array.isArray(data.chats)) {
-					const messages = data.chats.map((chat: any) => ({
-						id: chat.user.id,
-						name: chat.user.realname || chat.user.username,
-						image: chat.user.photo_url || "/placeholder.svg",
-						message: chat.lastMessage?.message || "",
-						time: chat.lastMessage?.created_at
-							? new Date(chat.lastMessage.created_at).toLocaleString()
-							: "",
-						unread: !chat.lastMessage?.read_at,
-					}))
-					setRecentMessages(messages)
-				} else {
-					setRecentMessages([])
-				}
-			} catch {
-				setRecentMessages([])
-			}
-			setLoadingMessages(false)
-		}
-		fetchMessages()
-	}, [])
+	// Replace dashboardStats with API data
+	const dashboardStats = [
+		{
+			key: "profileViews",
+			label: "Profile Views",
+			value: dashboardStatsData.profileViews,
+			icon: "Eye",
+			trend: "+12% this week",
+			trendIcon: "TrendingUp",
+			trendColor: "green",
+		},
+		{
+			key: "totalMatches",
+			label: "Total Matches",
+			value: dashboardStatsData.totalMatches,
+			icon: "Heart",
+			trend: "+3 new matches",
+			trendIcon: "TrendingUp",
+			trendColor: "green",
+		},
+		{
+			key: "messages",
+			label: "Messages",
+			value: dashboardStatsData.messages,
+			icon: "MessageCircle",
+			trend: "5 unread",
+			trendIcon: "MessageCircle",
+			trendColor: "blue",
+		},
+		{
+			key: "eventsJoined",
+			label: "Events Joined",
+			value: dashboardStatsData.totalEventsJoined,
+			icon: "Calendar",
+			trend: "2 upcoming",
+			trendIcon: "Calendar",
+			trendColor: "purple",
+		},
+	]
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -233,7 +266,9 @@ export default function DashboardPage() {
 				{/* Header */}
 				<div className="flex items-center justify-between mb-8">
 					<div>
-						<h1 className="text-3xl font-bold">Welcome back, Alex!</h1>
+						<h1 className="text-3xl font-bold">
+    Welcome back, {user?.realname || "User"}!
+  </h1>
 						<p className="text-muted-foreground">Here's what's happening in your dating journey</p>
 					</div>
 					<div className="flex gap-2">
@@ -284,7 +319,7 @@ export default function DashboardPage() {
 							<CardHeader>
 								<CardTitle className="flex items-center justify-between">
 									Profile Completion
-									<Badge variant="secondary">{profileCompletion.rate}%</Badge>
+									<Badge variant="secondary">{profileCompletion?.rate}%</Badge>
 								</CardTitle>
 							</CardHeader>
 							<CardContent>
@@ -352,7 +387,7 @@ export default function DashboardPage() {
 						</Card>
 
 						{/* Recent Activity */}
-						<Card>
+						{/* <Card>
 							<CardHeader>
 								<CardTitle>Recent Activity</CardTitle>
 							</CardHeader>
@@ -371,7 +406,7 @@ export default function DashboardPage() {
 									))}
 								</div>
 							</CardContent>
-						</Card>
+						</Card> */}
 					</div>
 
 					{/* Sidebar */}
@@ -434,15 +469,24 @@ export default function DashboardPage() {
 							</CardHeader>
 							<CardContent>
 								<div className="space-y-3">
-									{upcomingEvents.map((event) => (
-										<div key={event.id} className="p-3 bg-muted rounded-lg">
-											<p className="font-medium text-sm">{event.title}</p>
-											<p className="text-xs text-muted-foreground">
-												{event.date} at {event.time}
-											</p>
-											<p className="text-xs text-muted-foreground">{event.location}</p>
-										</div>
-									))}
+									{loadingEvents ? (
+										<div className="text-center text-muted-foreground">Loading...</div>
+									) : upcomingEvents.length === 0 ? (
+										<div className="text-center text-muted-foreground">No upcoming events found.</div>
+									) : (
+										upcomingEvents.map((event) => (
+											<div key={event.id} className="p-3 bg-muted rounded-lg flex items-center gap-3">
+												<img src={event.image} alt={event.title} className="w-16 h-16 object-cover rounded-lg" />
+												<div>
+													<p className="font-medium text-sm">{event.title}</p>
+													<p className="text-xs text-muted-foreground">
+														{event.date} at {event.time}
+													</p>
+													<p className="text-xs text-muted-foreground">{event.location}</p>
+												</div>
+											</div>
+										))
+									)}
 								</div>
 							</CardContent>
 						</Card>

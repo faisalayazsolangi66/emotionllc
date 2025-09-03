@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from "lucide-react"
 import { useAuth } from "@/components/auth-context"
+import { useIsMobile } from "@/components/ui/use-mobile"
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -37,6 +38,7 @@ export function Navigation() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const { isAuthenticated } = useAuth()
+  const isMobile = useIsMobile() // returns true if mobile
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -71,45 +73,47 @@ export function Navigation() {
         {/* Right Side */}
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          <Link href="/dashboard">
+          <Link href={isMobile ? "/m/profile" : "/dashboard"}>
             <Button variant="ghost" size="icon">
               <User className="h-4 w-4" />
             </Button>
           </Link>
-          <Link href="/profile/settings">
+          <Link href={isMobile ? "/m/settings" : "/profile/settings"}>
             <Button variant="ghost" size="icon">
               <Settings className="h-4 w-4" />
             </Button>
           </Link>
 
           {/* Mobile Menu */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-80">
-              <div className="flex flex-col space-y-4 mt-8">
-                {navigation.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center space-x-3 text-lg font-medium transition-colors hover:text-red-500 ${
-                        pathname === item.href ? "text-red-500" : "text-muted-foreground"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.name}</span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </SheetContent>
-          </Sheet>
+          {!isMobile && (
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild className="md:hidden">
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <div className="flex flex-col space-y-4 mt-8">
+                  {navigation.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className={`flex items-center space-x-3 text-lg font-medium transition-colors hover:text-red-500 ${
+                          pathname === item.href ? "text-red-500" : "text-muted-foreground"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span>{item.name}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
         </div>
       </div>
     </header>

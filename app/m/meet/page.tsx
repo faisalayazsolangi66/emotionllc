@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,68 +8,73 @@ import { Heart, X, RotateCcw, MapPin, Star, MessageCircle } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
-const matchProfiles = [
-  {
-    id: 1,
-    name: "Sarah",
-    age: 28,
-    location: "New York",
-    distance: "2 miles away",
-    images: [
-      "/placeholder.svg?height=500&width=400&text=Sarah1",
-      "/placeholder.svg?height=500&width=400&text=Sarah2",
-      "/placeholder.svg?height=500&width=400&text=Sarah3",
-    ],
-    bio: "Adventure seeker, coffee lover, and yoga enthusiast. Looking for someone to explore the city with!",
-    interests: ["Travel", "Yoga", "Photography", "Coffee"],
-    isOnline: true,
-    verified: true,
-    compatibility: 89,
-  },
-  {
-    id: 2,
-    name: "Emma",
-    age: 26,
-    location: "Brooklyn",
-    distance: "5 miles away",
-    images: ["/placeholder.svg?height=500&width=400&text=Emma1", "/placeholder.svg?height=500&width=400&text=Emma2"],
-    bio: "Artist by day, dancer by night. Love creating beautiful things and meaningful connections.",
-    interests: ["Art", "Dancing", "Music", "Books"],
-    isOnline: false,
-    verified: true,
-    compatibility: 92,
-  },
-  {
-    id: 3,
-    name: "Jessica",
-    age: 25,
-    location: "Manhattan",
-    distance: "3 miles away",
-    images: [
-      "/placeholder.svg?height=500&width=400&text=Jessica1",
-      "/placeholder.svg?height=500&width=400&text=Jessica2",
-      "/placeholder.svg?height=500&width=400&text=Jessica3",
-      "/placeholder.svg?height=500&width=400&text=Jessica4",
-    ],
-    bio: "Fitness enthusiast and foodie. Always up for trying new restaurants or hitting the gym!",
-    interests: ["Fitness", "Food", "Travel", "Movies"],
-    isOnline: true,
-    verified: false,
-    compatibility: 85,
-  },
-]
+type Profile = {
+  id: number
+  username: string
+  name: string
+  age: number
+  location: string
+  image: string
+  bio: string
+  interests: string[]
+  distance: string
+  lastActive: string
+  images: string[]
+  isOnline?: boolean
+  verified?: boolean
+  compatibility?: number
+}
 
-export default function MatchesPage() {
+export default function MeetPage() {
+  const [profiles, setProfiles] = useState<Profile[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [profiles, setProfiles] = useState(matchProfiles)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
 
+  // Fetch profiles from API
+  useEffect(() => {
+    const randomPage = Math.floor(Math.random() * 700) + 1
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}users?page=${randomPage}&limit=1000&with_photo=yes`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.data?.data) {
+          const mapped: Profile[] = data.data.data.map((user: any) => {
+            const firstAlbum = user.albums?.[0]
+            const firstPhoto = firstAlbum?.photos?.[0]
+            return {
+              id: user.id,
+              username: user.username,
+              name: user.realname || user.username,
+              age: user.birthdate ? new Date().getFullYear() - new Date(user.birthdate).getFullYear() : 25,
+              location: user.city || "Unknown",
+              image:
+                firstPhoto?.photo_url ||
+                firstAlbum?.cover?.cover_url ||
+                "/placeholder.svg?height=600&width=400&text=No+Photo",
+              bio: user.bio || "This user has not added a bio yet.",
+              interests: user.interests || ["Music", "Travel", "Sports"],
+              distance: "5 miles away", // dummy, API does not provide
+              lastActive: user.last_active || "Active recently",
+              images: firstAlbum?.photos?.map((p: any) => p.photo_url) || [],
+              isOnline: user.is_online || false,
+              verified: user.is_verified || false,
+              compatibility: user.compatibility || Math.floor(Math.random() * 20) + 80,
+            }
+          })
+          setProfiles(mapped)
+        }
+      })
+      .catch((err) => {
+        setProfiles([])
+      })
+  }, [])
+
   const currentProfile = profiles[currentIndex]
 
+  // Swipe/tap logic
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0]
     setDragStart({ x: touch.clientX, y: touch.clientY })
@@ -88,20 +91,14 @@ export default function MatchesPage() {
 
   const handleTouchEnd = () => {
     if (!isDragging) return
-
     const threshold = 100
     const { x, y } = dragOffset
-
     if (Math.abs(x) > threshold) {
-      if (x > 0) {
-        handleLike()
-      } else {
-        handlePass()
-      }
+      if (x > 0) handleLike()
+      else handlePass()
     } else if (y > threshold) {
       handleNope()
     }
-
     setDragOffset({ x: 0, y: 0 })
     setIsDragging(false)
   }
@@ -120,10 +117,8 @@ export default function MatchesPage() {
 
   const nextProfile = () => {
     setCurrentImageIndex(0)
-    if (currentIndex < profiles.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-    } else {
-      setCurrentIndex(0)
+    if (profiles.length > 0) {
+      setCurrentIndex((prev) => (prev + 1) % profiles.length)
     }
   }
 
@@ -131,15 +126,10 @@ export default function MatchesPage() {
     const rect = e.currentTarget.getBoundingClientRect()
     const x = e.clientX - rect.left
     const width = rect.width
-
     if (x < width / 2) {
-      // Tap left side - previous image
-      if (currentImageIndex > 0) {
-        setCurrentImageIndex(currentImageIndex - 1)
-      }
+      if (currentImageIndex > 0) setCurrentImageIndex(currentImageIndex - 1)
     } else {
-      // Tap right side - next image
-      if (currentImageIndex < currentProfile.images.length - 1) {
+      if (currentProfile.images && currentImageIndex < currentProfile.images.length - 1) {
         setCurrentImageIndex(currentImageIndex + 1)
       }
     }
@@ -149,6 +139,10 @@ export default function MatchesPage() {
     transform: `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${dragOffset.x * 0.1}deg)`,
     opacity: isDragging ? 0.8 : 1,
     transition: isDragging ? "none" : "transform 0.3s ease, opacity 0.3s ease",
+  }
+
+  if (!currentProfile) {
+    return <div className="min-h-screen flex items-center justify-center">Loading profiles...</div>
   }
 
   return (
@@ -173,7 +167,7 @@ export default function MatchesPage() {
             <div className="relative">
               <div className="relative cursor-pointer" onClick={handleImageTap}>
                 <Image
-                  src={currentProfile.images[currentImageIndex] || "/placeholder.svg"}
+                  src={currentProfile.images?.[currentImageIndex] || currentProfile.image}
                   alt={`${currentProfile.name} photo ${currentImageIndex + 1}`}
                   width={400}
                   height={500}
@@ -181,7 +175,7 @@ export default function MatchesPage() {
                 />
 
                 {/* Image Indicators */}
-                {currentProfile.images.length > 1 && (
+                {currentProfile.images && currentProfile.images.length > 1 && (
                   <div className="absolute top-4 left-4 right-4 flex space-x-1">
                     {currentProfile.images.map((_, index) => (
                       <div
@@ -215,24 +209,20 @@ export default function MatchesPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <Link href={`/user/${currentProfile.id}`}>
+                    <Link href={`/m/user/${currentProfile.id}`}>
                       <h3 className="text-xl font-bold">{currentProfile.name}</h3>
                     </Link>
-
                     <span className="text-lg text-muted-foreground">{currentProfile.age}</span>
                   </div>
                   <Button size="sm" variant="outline">
                     <MessageCircle className="h-4 w-4" />
                   </Button>
                 </div>
-
                 <p className="flex items-center text-sm text-muted-foreground mb-3">
                   <MapPin className="h-3 w-3 mr-1" />
-                  {currentProfile.distance}
+                  {currentProfile.location} • {currentProfile.distance}
                 </p>
-
                 <p className="text-sm mb-3">{currentProfile.bio}</p>
-
                 <div className="flex flex-wrap gap-1">
                   {currentProfile.interests.map((interest) => (
                     <Badge key={interest} variant="secondary" className="text-xs">
@@ -277,7 +267,6 @@ export default function MatchesPage() {
         >
           <X className="h-6 w-6 text-red-500" />
         </Button>
-
         <Button
           size="lg"
           variant="outline"
@@ -286,7 +275,6 @@ export default function MatchesPage() {
         >
           <RotateCcw className="h-6 w-6 text-gray-500" />
         </Button>
-
         <Button
           size="lg"
           className="rounded-full w-14 h-14 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600"
