@@ -45,8 +45,9 @@ export function Navigation() {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <Heart className="h-8 w-8 text-red-500 fill-current" />
-          <span className="text-2xl font-bold">EMOTIONS</span>
+          {/* <Heart className="h-8 w-8 text-red-500 fill-current" />
+          <span className="text-2xl font-bold">EMOTIONS</span> */}
+          <img src={'/logo.png'} alt="Emotions Logo" style={{width:'8%'}} />
         </Link>
 
         {/* Desktop Navigation */}

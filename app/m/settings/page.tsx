@@ -56,6 +56,12 @@ export default function SettingsPage() {
     }))
   }
 
+  const handleLogout = () => {
+    document.cookie = "token=; path=/; SameSite=Lax; Secure"
+    localStorage.removeItem('token');
+    window.location.reload();
+  }
+
   return (
     <div className="p-4 space-y-6 pb-20">
       <div className="mb-6">
@@ -257,6 +263,7 @@ export default function SettingsPage() {
           <Separator />
 
           <Button
+            onClick={handleLogout}
             variant="outline"
             className="w-full justify-start text-orange-600 hover:text-orange-700 bg-transparent"
           >
