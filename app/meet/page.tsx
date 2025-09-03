@@ -45,6 +45,7 @@ export default function MeetPage() {
             return {
               id: user.id,
               name: user.realname || user.username,
+              username: user.username,
               age: user.birthdate ? new Date().getFullYear() - new Date(user.birthdate).getFullYear() : 25,
               location: "Unknown", // dummy since API has no location
               image:

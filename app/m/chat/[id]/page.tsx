@@ -21,6 +21,9 @@ function getTokenFromCookie(name: string) {
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { user: loggedInUser } = useAuth()
   const currentUserId = loggedInUser?.id
+  const [chats, setChats] = useState<any[]>([])
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null)
+  const [selectedChatUser, setSelectedChatUser] = useState<any | null>(null)
   const [chatData, setChatData] = useState<any>(null)
   const [newMessage, setNewMessage] = useState("")
   const [loadingMessages, setLoadingMessages] = useState(false)
@@ -29,9 +32,30 @@ export default function ChatPage({ params }: { params: { id: string } }) {
 
   // Get logged-in user info (replace with your auth context if available)
   useEffect(() => {
-    // Example: fetch user from API or context
-    // setCurrentUserId(loggedInUser.id)
-  }, [])
+    if (chats.length > 0) {
+      const selected = chats.find(chat => chat.other_user.username === params.username)
+      if (selected) {
+        setSelectedChatId(selected.id)
+        setSelectedChatUser(selected.other_user)
+        return
+      }
+    }
+    // If not found, fetch user by username
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}user/${params.id}`)
+        const data = await res.json()
+        console.log(data, "==========================data in fetch user")
+        if (res.ok && data.status && data.data.id > 0) {
+          setSelectedChatId(null)
+          setSelectedChatUser(data.data)
+          setOtherUser(data.data);
+        }
+      } catch {
+      }
+    }
+    fetchUser()
+  }, [chats, params.id])
 
   // Fetch chat info and messages
   useEffect(() => {
@@ -56,7 +80,6 @@ export default function ChatPage({ params }: { params: { id: string } }) {
           userObj = chat.user
         }
       }
-      setOtherUser(userObj)
       if (!chatId) {
         setChatData(null)
         setLoadingMessages(false)
@@ -104,9 +127,57 @@ export default function ChatPage({ params }: { params: { id: string } }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [chatData?.chat?.messages])
 
+
+  const fetchChats = async () => {
+    const token = getTokenFromCookie("token")
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}my-chats`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      const data = await res.json()
+      if (res.ok && Array.isArray(data.chats)) {
+        const mappedChats = data.chats.map((chat: any) => ({
+          id: chat.chat_id,
+          last_message: chat.lastMessage?.message || "",
+          last_message_time: chat.lastMessage?.created_at || "",
+          unread_count: chat.lastMessage?.read_at ? 0 : 1,
+          other_user: {
+            id: chat.user.id,
+            realname: chat.user.realname || chat.user.username,
+            username: chat.user.username,
+            photo_url: chat.user.photo_url || "/placeholder.svg",
+            online_status: "offline", // update if API provides
+          },
+        }))
+        setChats(mappedChats)
+
+        // Find chat by username param
+        const selected = mappedChats.find(
+          (chat) => chat.other_user.username === params.id
+        )
+        if (selected) {
+          setSelectedChatId(selected.id)
+          setSelectedChatUser(selected.other_user)
+          setOtherUser(selected.other_user);
+        }
+      } else {
+        setChats([])
+      }
+    } catch {
+      setChats([])
+    }
+  }
+  useEffect(() => {
+    fetchChats()
+  }, [params.id])
+
   // Send message
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !otherUser?.id || !chatData?.chat?.id) return
+    if (!newMessage.trim() || !otherUser?.id) return
     const token = getTokenFromCookie("token")
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}chat/send`, {
@@ -129,6 +200,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
           message: newMessage,
           timestamp: new Date().toISOString(),
         })
+        await fetchChats();
         // Refresh messages
         const res2 = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}chat/${chatData.chat.id}/messages`, {
           method: "GET",
@@ -142,7 +214,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
           setChatData(data2)
         }
       }
-    } catch {}
+    } catch { }
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -210,9 +282,8 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                     className="w-6 h-6 rounded-full object-cover"
                   />
                   <div
-                    className={`px-4 py-2 rounded-2xl ${
-                      message.sender_id === currentUserId ? "bg-red-500 text-white rounded-br-sm" : "bg-muted rounded-bl-sm"
-                    }`}
+                    className={`px-4 py-2 rounded-2xl ${message.sender_id === currentUserId ? "bg-red-500 text-white rounded-br-sm" : "bg-muted rounded-bl-sm"
+                      }`}
                   >
                     <p className="text-sm">{message.message}</p>
                     <p className={`text-xs mt-1 ${message.sender_id === currentUserId ? "text-red-100" : "text-muted-foreground"}`}>

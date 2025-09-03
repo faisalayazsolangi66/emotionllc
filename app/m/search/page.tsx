@@ -179,7 +179,7 @@ export default function SearchPage() {
       {/* Search Results */}
       <div className="grid grid-cols-2 gap-3">
         {searchResults.map((user: any) => (
-          <Link key={user.id} href={`/m/user/${user.id}`}>
+          <Link key={user.id} href={`/m/user/${user.username}`}>
             <Card className="overflow-hidden hover:shadow-md transition-shadow">
               <div className="relative">
                 <Image

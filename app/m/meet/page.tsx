@@ -209,7 +209,7 @@ export default function MeetPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <Link href={`/m/user/${currentProfile.id}`}>
+                    <Link href={`/m/user/${currentProfile.username}`}>
                       <h3 className="text-xl font-bold">{currentProfile.name}</h3>
                     </Link>
                     <span className="text-lg text-muted-foreground">{currentProfile.age}</span>
