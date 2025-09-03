@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Heart,
   Menu,
@@ -18,9 +18,9 @@ import {
   User,
   Settings,
   Sparkles,
-} from "lucide-react"
-import { useAuth } from "@/components/auth-context"
-import { useIsMobile } from "@/components/ui/use-mobile"
+} from "lucide-react";
+import { useAuth } from "@/components/auth-context";
+import { useIsMobile } from "@/components/ui/use-mobile";
 
 const navigation = [
   { name: "Home", href: "/", icon: Home },
@@ -32,33 +32,42 @@ const navigation = [
   { name: "Events", href: "/events", icon: Calendar, protected: true },
   { name: "Blog", href: "/blog", icon: BookOpen },
   { name: "Forum", href: "/forum", icon: MessageSquare, protected: true },
-]
+];
 
 export function Navigation() {
-  const pathname = usePathname()
-  const [isOpen, setIsOpen] = useState(false)
-  const { isAuthenticated } = useAuth()
-  const isMobile = useIsMobile() // returns true if mobile
-  function getTokenFromCookie(name: string) {
-    const value = `; ${document.cookie}`
-    const parts = value.split(`; ${name}=`)
-    if (parts.length === 2) return parts.pop()?.split(";").shift() || ""
-    return ""
-  }
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const isMobile = useIsMobile();
+
+  // ✅ keep token in state instead of calling document.cookie in render
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // runs only in browser
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; token=`);
+    if (parts.length === 2) {
+      setToken(parts.pop()?.split(";").shift() || null);
+    }
+  }, []);
 
   const handleLogout = () => {
-    document.cookie = "token=; path=/; SameSite=Lax; Secure"
-    localStorage.removeItem('token');
+    document.cookie = "token=; path=/; SameSite=Lax; Secure";
+    localStorage.removeItem("token");
     window.location.reload();
-  }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          {/* <Heart className="h-8 w-8 text-red-500 fill-current" />
-          <span className="text-2xl font-bold">EMOTIONS</span> */}
-          <img src={'/logo.png'} alt="Emotions Logo" style={{ width: getTokenFromCookie('token') ? '35%' : '8%' }} />
+          <img
+            src="/logo.png"
+            alt="Emotions Logo"
+            style={{ width: token ? "35%" : "8%" }}
+          />
         </Link>
 
         {/* Desktop Navigation */}
@@ -66,18 +75,21 @@ export function Navigation() {
           {navigation
             .filter((item) => !item.protected || isAuthenticated)
             .map((item) => {
-              const Icon = item.icon
+              const Icon = item.icon;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-red-500 ${pathname === item.href ? "text-red-500" : "text-muted-foreground"
-                    }`}
+                  className={`flex items-center space-x-1 text-sm font-medium transition-colors hover:text-red-500 ${
+                    pathname === item.href
+                      ? "text-red-500"
+                      : "text-muted-foreground"
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{item.name}</span>
                 </Link>
-              )
+              );
             })}
         </nav>
 
@@ -85,7 +97,7 @@ export function Navigation() {
         <div className="flex items-center space-x-4">
           <ThemeToggle />
 
-          {getTokenFromCookie("token") && (
+          {token && (
             <>
               <Link href={isMobile ? "/m/profile" : "/dashboard"}>
                 <Button variant="ghost" size="icon">
@@ -100,8 +112,7 @@ export function Navigation() {
             </>
           )}
 
-
-          {getTokenFromCookie("token") ? (
+          {token ? (
             <Button onClick={handleLogout} variant="ghost">
               Logout
             </Button>
@@ -122,19 +133,22 @@ export function Navigation() {
               <SheetContent side="right" className="w-80">
                 <div className="flex flex-col space-y-4 mt-8">
                   {navigation.map((item) => {
-                    const Icon = item.icon
+                    const Icon = item.icon;
                     return (
                       <Link
                         key={item.name}
                         href={item.href}
                         onClick={() => setIsOpen(false)}
-                        className={`flex items-center space-x-3 text-lg font-medium transition-colors hover:text-red-500 ${pathname === item.href ? "text-red-500" : "text-muted-foreground"
-                          }`}
+                        className={`flex items-center space-x-3 text-lg font-medium transition-colors hover:text-red-500 ${
+                          pathname === item.href
+                            ? "text-red-500"
+                            : "text-muted-foreground"
+                        }`}
                       >
                         <Icon className="h-5 w-5" />
                         <span>{item.name}</span>
                       </Link>
-                    )
+                    );
                   })}
                 </div>
               </SheetContent>
@@ -143,5 +157,5 @@ export function Navigation() {
         </div>
       </div>
     </header>
-  )
+  );
 }
